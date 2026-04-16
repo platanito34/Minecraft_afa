@@ -1,0 +1,55 @@
+version: '3.9'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: minecraft_panel_backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+    ports:
+      - "3001:3001"
+    networks:
+      - panel_net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on: []
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3001}
+        VITE_WS_URL: ${VITE_WS_URL:-http://localhost:3001}
+    container_name: minecraft_panel_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    networks:
+      - panel_net
+    depends_on:
+      - backend
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: minecraft_panel_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    networks:
+      - panel_net
+    depends_on:
+      - backend
+      - frontend
+
+networks:
+  panel_net:
+    driver: bridge
