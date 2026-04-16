@@ -57,7 +57,7 @@ router.post('/', requireRole('admin'), async (req, res, next) => {
 
     const rounds = parseInt(process.env.BCRYPT_ROUNDS) || 12;
     const hash = await bcrypt.hash(password, rounds);
-    const [result] = await query(
+    const result = await query(
       'INSERT INTO panel_users (email, password_hash, name, role, language) VALUES (?, ?, ?, ?, ?)',
       [email.toLowerCase().trim(), hash, name, role, language || 'es']
     );

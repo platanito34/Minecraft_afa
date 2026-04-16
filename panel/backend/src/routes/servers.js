@@ -56,7 +56,7 @@ router.post('/', requireRole('admin'), async (req, res, next) => {
     const { name, pterodactyl_server_id, rcon_host, rcon_port, rcon_password, description } = req.body;
     if (!name) return res.status(400).json({ error: 'El nombre es obligatorio' });
 
-    const [result] = await query(
+    const result = await query(
       `INSERT INTO panel_servers (name, pterodactyl_server_id, rcon_host, rcon_port, rcon_password, description)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [name, pterodactyl_server_id || null, rcon_host || null,

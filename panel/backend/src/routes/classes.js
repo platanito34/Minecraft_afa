@@ -73,7 +73,7 @@ router.post('/', requireMinRole('teacher'), async (req, res, next) => {
     if (!name) return res.status(400).json({ error: 'El nombre es obligatorio' });
 
     const tid = req.user.role === 'admin' ? (teacher_id || req.user.id) : req.user.id;
-    const [result] = await query(
+    const result = await query(
       'INSERT INTO panel_classes (name, description, teacher_id) VALUES (?, ?, ?)',
       [name, description || null, tid]
     );

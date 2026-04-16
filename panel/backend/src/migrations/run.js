@@ -3,14 +3,55 @@ const path = require('path');
 const { query } = require('../config/database');
 const logger = require('../config/logger');
 
+// Elimina comentarios SQL (-- línea y /* bloque */) antes de parsear
+function stripComments(sql) {
+  return sql
+    .replace(/\/\*[\s\S]*?\*\//g, '')  // /* bloque */
+    .replace(/--[^\n]*/g, '');          // -- hasta fin de línea
+}
+
+// Divide el SQL en sentencias individuales, ignorando ; dentro de strings
+function splitStatements(sql) {
+  const cleaned = stripComments(sql);
+  const stmts = [];
+  let current = '';
+  let inSingleQuote = false;
+  let inDoubleQuote = false;
+  let inBacktick = false;
+
+  for (let i = 0; i < cleaned.length; i++) {
+    const ch = cleaned[i];
+    const prev = cleaned[i - 1];
+
+    if (ch === "'" && !inDoubleQuote && !inBacktick && prev !== '\\') {
+      inSingleQuote = !inSingleQuote;
+    } else if (ch === '"' && !inSingleQuote && !inBacktick && prev !== '\\') {
+      inDoubleQuote = !inDoubleQuote;
+    } else if (ch === '`' && !inSingleQuote && !inDoubleQuote) {
+      inBacktick = !inBacktick;
+    }
+
+    if (ch === ';' && !inSingleQuote && !inDoubleQuote && !inBacktick) {
+      const stmt = current.trim();
+      if (stmt.length > 0) stmts.push(stmt);
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  const last = current.trim();
+  if (last.length > 0) stmts.push(last);
+  return stmts;
+}
+
 async function runMigrations() {
-  // Tabla de control de migraciones
+  // Tabla de control (se crea primero, antes de cualquier fichero SQL)
   await query(`
     CREATE TABLE IF NOT EXISTS panel_migrations (
       id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       filename   VARCHAR(255) NOT NULL UNIQUE,
       applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
   const migrationsDir = __dirname;
@@ -20,25 +61,33 @@ async function runMigrations() {
 
   for (const file of files) {
     const applied = await query('SELECT id FROM panel_migrations WHERE filename = ?', [file]);
-    if (applied.length > 0) continue;
+    if (applied.length > 0) {
+      logger.debug(`Migración ya aplicada, saltando: ${file}`);
+      continue;
+    }
 
     logger.info(`Aplicando migración: ${file}`);
     const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
+    const statements = splitStatements(sql);
 
-    // Ejecutar cada statement por separado
-    const statements = sql
-      .split(';')
-      .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
+    logger.debug(`  ${statements.length} sentencia(s) encontradas en ${file}`);
 
     for (const stmt of statements) {
       try {
         await query(stmt);
       } catch (err) {
-        // Ignorar errores de "ya existe" para idempotencia
-        if (!err.message.includes('already exists') && !err.message.includes('Duplicate entry')) {
-          throw err;
+        // Ignorar errores esperados por idempotencia
+        const msg = err.message || '';
+        if (
+          msg.includes('already exists') ||
+          msg.includes('Duplicate entry') ||
+          msg.includes('duplicate key')
+        ) {
+          logger.debug(`  Ignorado (ya existía): ${msg.substring(0, 80)}`);
+          continue;
         }
+        logger.error(`Error en migración ${file}:\n${stmt.substring(0, 200)}`);
+        throw err;
       }
     }
 
@@ -46,7 +95,7 @@ async function runMigrations() {
     logger.info(`✅ Migración aplicada: ${file}`);
   }
 
-  // Crear admin inicial si no existe
+  // Crear admin inicial DESPUÉS de que todas las tablas existan
   await createInitialAdmin();
 }
 

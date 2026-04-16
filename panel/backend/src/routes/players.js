@@ -109,7 +109,7 @@ router.post('/', requireMinRole('teacher'), async (req, res, next) => {
     if (!uuid || !username) {
       return res.status(400).json({ error: 'uuid y username son obligatorios' });
     }
-    const [result] = await query(
+    const result = await query(
       'INSERT INTO panel_players (uuid, username, display_name, notes) VALUES (?, ?, ?, ?)',
       [uuid, username, display_name || null, notes || null]
     );

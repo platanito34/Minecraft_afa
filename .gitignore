@@ -1,0 +1,22 @@
+# Entorno
+panel/.env
+panel/backend/.env
+panel/frontend/.env
+panel/frontend/.env.local
+
+# Dependencias
+panel/backend/node_modules/
+panel/frontend/node_modules/
+
+# Build
+panel/frontend/dist/
+
+# Certificados SSL
+panel/nginx/certs/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

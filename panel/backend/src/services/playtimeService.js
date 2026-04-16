@@ -152,7 +152,7 @@ async function notifyParents(player, reason) {
 async function recordLogin(playerUuid, username, serverId) {
   let player = await queryOne('SELECT * FROM panel_players WHERE uuid = ?', [playerUuid]);
   if (!player) {
-    const [r] = await query(
+    const r = await query(
       'INSERT INTO panel_players (uuid, username) VALUES (?, ?)', [playerUuid, username]
     );
     player = await queryOne('SELECT * FROM panel_players WHERE id = ?', [r.insertId]);
@@ -169,7 +169,7 @@ async function recordLogin(playerUuid, username, serverId) {
   `, [player.id]);
 
   // Abrir nueva sesión
-  const [sess] = await query(
+  const sess = await query(
     'INSERT INTO panel_play_sessions (player_id, server_id, login_at) VALUES (?, ?, NOW())',
     [player.id, serverId || null]
   );
