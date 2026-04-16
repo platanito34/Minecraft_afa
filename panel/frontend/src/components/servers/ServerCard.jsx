@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   PlayIcon, StopIcon, ArrowPathIcon, ServerIcon,
-  CpuChipIcon, CircleStackIcon,
+  CpuChipIcon, CircleStackIcon, PencilSquareIcon,
 } from '@heroicons/react/24/outline'
 import api from '../../services/api'
 import { serverStateBadge } from '../../utils/helpers'
 import Badge from '../common/Badge'
 
-export default function ServerCard({ server, onRefresh }) {
+export default function ServerCard({ server, onRefresh, onEdit }) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
 
@@ -49,7 +49,18 @@ export default function ServerCard({ server, onRefresh }) {
             )}
           </div>
         </div>
-        <Badge color={badge.cls.replace('badge-', '')}>{badge.label}</Badge>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Badge color={badge.cls.replace('badge-', '')}>{badge.label}</Badge>
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded transition-colors"
+              title="Editar servidor"
+            >
+              <PencilSquareIcon className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Recursos */}

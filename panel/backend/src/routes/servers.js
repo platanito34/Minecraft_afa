@@ -93,6 +93,34 @@ router.patch('/:id', requireRole('admin'), async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// PUT /api/servers/:id — Actualizar nombre, Pterodactyl ID y campos RCON
+router.put('/:id', requireRole('admin'), async (req, res, next) => {
+  try {
+    const { name, pterodactyl_server_id, rcon_host, rcon_port, rcon_password } = req.body;
+    if (!name) return res.status(400).json({ error: 'El nombre es obligatorio' });
+
+    await query(
+      `UPDATE panel_servers
+       SET name = ?, pterodactyl_server_id = ?, rcon_host = ?, rcon_port = ?, rcon_password = ?
+       WHERE id = ?`,
+      [
+        name,
+        pterodactyl_server_id || null,
+        rcon_host || null,
+        parseInt(rcon_port) || 25575,
+        rcon_password || null,
+        req.params.id,
+      ]
+    );
+    const server = await queryOne(
+      'SELECT id, name, pterodactyl_server_id, rcon_host, rcon_port, description, active FROM panel_servers WHERE id = ?',
+      [req.params.id]
+    );
+    if (!server) return res.status(404).json({ error: 'Servidor no encontrado' });
+    res.json(server);
+  } catch (err) { next(err); }
+});
+
 // DELETE /api/servers/:id
 router.delete('/:id', requireRole('admin'), async (req, res, next) => {
   try {
