@@ -41,19 +41,12 @@ async function getTGEPlaytime(uuid) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Minutos jugados HOY según panel_play_sessions.
- * La sesión abierta (logout_at IS NULL) se cuenta hasta NOW().
+ * Minutos totales de por vida desde PlaytimeTrackerTGE.
+ * Recibe el UUID del jugador (campo uuid de panel_players).
  */
-async function getMinutesPlayedToday(playerId) {
-  const row = await queryOne(`
-    SELECT COALESCE(
-      SUM(TIMESTAMPDIFF(MINUTE, login_at, IFNULL(logout_at, NOW()))),
-      0
-    ) AS minutes
-    FROM panel_play_sessions
-    WHERE player_id = ? AND DATE(login_at) = CURDATE()
-  `, [playerId]);
-  return Number(row?.minutes) || 0;
+async function getMinutesPlayedToday(playerUuid) {
+  const tge = await getTGEPlaytime(playerUuid);
+  return tge?.totalMinutes ?? 0;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -69,8 +62,7 @@ async function checkPlayerLimits(playerId, io) {
   );
   if (!limits) return;
 
-  // Tiempo de hoy en minutos (de panel_play_sessions)
-  const minutesToday = await getMinutesPlayedToday(playerId);
+  const minutesToday = await getMinutesPlayedToday(player.uuid);
 
   const now = new Date();
   const currentTime = now.toTimeString().substring(0, 5); // "HH:MM"

@@ -2,6 +2,7 @@ const express = require('express');
 const { query, queryOne } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { requireMinRole } = require('../middleware/roles');
+const { getTGEPlaytime } = require('../services/playtimeService');
 
 const router = express.Router();
 router.use(authenticate);
@@ -60,7 +61,13 @@ router.get('/', async (req, res, next) => {
         ORDER BY p.username
       `, [req.user.id]);
     }
-    res.json(players);
+    const tgeResults = await Promise.all(players.map(p => getTGEPlaytime(p.uuid)));
+    const withPlaytime = players.map((p, i) => ({
+      ...p,
+      total_minutes: tgeResults[i]?.totalMinutes ?? null,
+      last_seen:     tgeResults[i]?.lastSeen?.toISOString() ?? null,
+    }));
+    res.json(withPlaytime);
   } catch (err) { next(err); }
 });
 
@@ -81,24 +88,30 @@ router.get('/:id', async (req, res, next) => {
       if (!access) return res.status(403).json({ error: 'Sin acceso a este jugador' });
     }
 
-    // Límites
-    const limits = await queryOne(
-      'SELECT * FROM panel_playtime_limits WHERE player_id = ?', [player.id]
-    );
-    // Clases
-    const classes = await query(`
-      SELECT c.id, c.name FROM panel_classes c
-      JOIN panel_class_players cp ON cp.class_id = c.id
-      WHERE cp.player_id = ?
-    `, [player.id]);
-    // Servidores
-    const servers = await query(`
-      SELECT s.id, s.name FROM panel_servers s
-      JOIN panel_player_servers ps ON ps.server_id = s.id
-      WHERE ps.player_id = ?
-    `, [player.id]);
+    const [limits, classes, servers, tge] = await Promise.all([
+      queryOne('SELECT * FROM panel_playtime_limits WHERE player_id = ?', [player.id]),
+      query(`
+        SELECT c.id, c.name FROM panel_classes c
+        JOIN panel_class_players cp ON cp.class_id = c.id
+        WHERE cp.player_id = ?
+      `, [player.id]),
+      query(`
+        SELECT s.id, s.name FROM panel_servers s
+        JOIN panel_player_servers ps ON ps.server_id = s.id
+        WHERE ps.player_id = ?
+      `, [player.id]),
+      getTGEPlaytime(player.uuid),
+    ]);
 
-    res.json({ ...player, limits, classes, servers });
+    res.json({
+      ...player,
+      limits,
+      classes,
+      servers,
+      total_minutes: tge?.totalMinutes ?? null,
+      last_seen:     tge?.lastSeen?.toISOString() ?? null,
+      first_join:    tge?.firstJoin?.toISOString() ?? null,
+    });
   } catch (err) { next(err); }
 });
 
