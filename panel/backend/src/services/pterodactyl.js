@@ -6,8 +6,8 @@ async function getConfig() {
   const urlRow    = await queryOne("SELECT `value` FROM panel_settings WHERE `key` = 'pterodactyl_url'");
   const keyRow    = await queryOne("SELECT `value` FROM panel_settings WHERE `key` = 'pterodactyl_key'");
   const clientRow = await queryOne("SELECT `value` FROM panel_settings WHERE `key` = 'pterodactyl_client_key'");
-
   const baseURL = (urlRow?.value || process.env.PTERODACTYL_URL || '').replace(/\/$/, '');
+  console.log('DEBUG pterodactyl baseURL:', baseURL, '| urlRow:', urlRow);
   const appKey  = keyRow?.value || process.env.PTERODACTYL_API_KEY || '';
   const clientKey = clientRow?.value || process.env.PTERODACTYL_CLIENT_KEY || '';
 
@@ -17,6 +17,8 @@ async function getConfig() {
 }
 
 function appClient(baseURL, appKey) {
+  const https = require('https');
+  const httpsAgent = new https.Agent({ rejectUnauthorized: false });
   return axios.create({
     baseURL: `${baseURL}/api/application`,
     headers: {
@@ -29,6 +31,8 @@ function appClient(baseURL, appKey) {
 }
 
 function clientClient(baseURL, clientKey) {
+  const https = require('https');
+  const httpsAgent = new https.Agent({ rejectUnauthorized: false });
   return axios.create({
     baseURL: `${baseURL}/api/client`,
     headers: {
@@ -36,6 +40,7 @@ function clientClient(baseURL, clientKey) {
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
+    httpsAgent,
     timeout: 10000,
   });
 }
