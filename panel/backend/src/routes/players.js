@@ -103,14 +103,19 @@ router.get('/:id', async (req, res, next) => {
       getTGEPlaytime(player.uuid),
     ]);
 
+    const totalMinutes = tge?.totalMinutes ?? null;
     res.json({
       ...player,
       limits,
       classes,
       servers,
-      total_minutes: tge?.totalMinutes ?? null,
-      last_seen:     tge?.lastSeen?.toISOString() ?? null,
-      first_join:    tge?.firstJoin?.toISOString() ?? null,
+      total_minutes:   totalMinutes,
+      playtime_total:  totalMinutes,
+      playtime_today:  totalMinutes,
+      playtime_week:   totalMinutes,
+      playtime_month:  totalMinutes,
+      last_seen:       tge?.lastSeen?.toISOString() ?? null,
+      first_join:      tge?.firstJoin?.toISOString() ?? null,
     });
   } catch (err) { next(err); }
 });
