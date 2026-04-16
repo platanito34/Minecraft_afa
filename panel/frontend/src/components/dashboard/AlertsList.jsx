@@ -34,7 +34,7 @@ export default function AlertsList({ alerts, loading }) {
               <div>
                 <p className="text-sm font-medium text-red-700 dark:text-red-300">{a.username}</p>
                 <p className="text-xs text-red-500 dark:text-red-400">
-                  {formatDuration(a.seconds_today)} / {a.daily_limit_minutes}min
+                  {formatDuration(a.minutes_today)} / {a.daily_limit_minutes}min
                 </p>
               </div>
               <span className="badge-red">Límite</span>

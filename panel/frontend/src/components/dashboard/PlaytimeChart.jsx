@@ -10,7 +10,7 @@ function CustomTooltip({ active, payload, label }) {
       <p className="font-medium text-gray-700 dark:text-gray-200">{label}</p>
       {payload.map(p => (
         <p key={p.name} style={{ color: p.color }}>
-          {p.name}: {Math.round(p.value / 60)}m
+          {p.name}: {p.value}m
         </p>
       ))}
     </div>
@@ -31,7 +31,7 @@ export default function PlaytimeChart({ data, loading }) {
 
   const chartData = (data || []).map(d => ({
     date: format(parseISO(d.date), 'd MMM', { locale: es }),
-    segundos: Number(d.seconds_played) || 0,
+    minutos: Number(d.minutes_played) || 0,
   }))
 
   return (
@@ -57,12 +57,12 @@ export default function PlaytimeChart({ data, loading }) {
             <YAxis
               tick={{ fontSize: 11 }}
               className="fill-gray-400"
-              tickFormatter={v => `${Math.round(v / 60)}m`}
+              tickFormatter={v => `${v}m`}
             />
             <Tooltip content={<CustomTooltip />} />
             <Area
               type="monotone"
-              dataKey="segundos"
+              dataKey="minutos"
               name="Tiempo"
               stroke="#3b82f6"
               fill="url(#grad)"

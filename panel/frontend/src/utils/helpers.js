@@ -1,21 +1,16 @@
-// Formatear segundos a "Xh Ym"
-export function formatDuration(seconds) {
-  if (!seconds || seconds <= 0) return '0m'
-  const h = Math.floor(seconds / 3600)
-  const m = Math.floor((seconds % 3600) / 60)
+// Formatear minutos a "Xh Ym"
+export function formatDuration(minutes) {
+  if (!minutes || minutes <= 0) return '0m'
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
   if (h > 0) return `${h}h ${m}m`
   return `${m}m`
 }
 
-// Formatear segundos a minutos
-export function toMinutes(seconds) {
-  return Math.floor((seconds || 0) / 60)
-}
-
 // Porcentaje usado del límite
-export function limitPercent(secondsToday, limitMinutes) {
+export function limitPercent(minutesToday, limitMinutes) {
   if (!limitMinutes) return 0
-  return Math.min(100, Math.round((secondsToday / (limitMinutes * 60)) * 100))
+  return Math.min(100, Math.round((minutesToday / limitMinutes) * 100))
 }
 
 // Color según porcentaje

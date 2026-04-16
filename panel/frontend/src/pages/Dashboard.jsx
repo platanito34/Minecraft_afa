@@ -48,8 +48,8 @@ export default function Dashboard() {
   }, [])
 
   // Calcular totales
-  const totalSecondsToday = summary.reduce((a, p) => a + (p.seconds_today || 0), 0)
-  const totalSecondsWeek  = summary.reduce((a, p) => a + (p.seconds_week  || 0), 0)
+  const totalMinutesToday = summary.reduce((a, p) => a + (p.minutes_today || 0), 0)
+  const totalMinutesWeek  = summary.reduce((a, p) => a + (p.minutes_week  || 0), 0)
   const onlineServers     = servers.filter(s => s.status?.current_state === 'running').length
 
   return (
@@ -71,14 +71,14 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard
           title={t('dashboard.playedToday')}
-          value={formatDuration(totalSecondsToday)}
+          value={formatDuration(totalMinutesToday)}
           icon={ClockIcon}
           color="blue"
           loading={loading}
         />
         <StatsCard
           title={t('dashboard.playedWeek')}
-          value={formatDuration(totalSecondsWeek)}
+          value={formatDuration(totalMinutesWeek)}
           icon={CalendarDaysIcon}
           color="purple"
           loading={loading}
@@ -128,16 +128,16 @@ export default function Dashboard() {
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {summary.map(p => {
                   const pct = p.daily_limit_minutes
-                    ? Math.min(100, Math.round((p.seconds_today / (p.daily_limit_minutes * 60)) * 100))
+                    ? Math.min(100, Math.round((p.minutes_today / p.daily_limit_minutes) * 100))
                     : 0
                   return (
                     <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                       <td className="py-2.5 px-3 font-medium text-gray-900 dark:text-white">{p.username}</td>
                       <td className="py-2.5 px-3 text-right text-gray-600 dark:text-gray-300">
-                        {formatDuration(p.seconds_today)}
+                        {formatDuration(p.minutes_today)}
                       </td>
                       <td className="py-2.5 px-3 text-right text-gray-600 dark:text-gray-300">
-                        {formatDuration(p.seconds_week)}
+                        {formatDuration(p.minutes_week)}
                       </td>
                       <td className="py-2.5 px-3 text-right text-gray-500">
                         {p.daily_limit_minutes ? `${p.daily_limit_minutes}m` : '—'}

@@ -77,9 +77,9 @@ export default function PlayerDetail() {
       {/* Stats hoy */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: t('players.today'),     value: formatDuration(summary?.seconds_today  || 0) },
-          { label: t('players.thisWeek'),  value: formatDuration(summary?.seconds_week   || 0) },
-          { label: t('players.thisMonth'), value: formatDuration(summary?.seconds_month  || 0) },
+          { label: t('players.today'),     value: formatDuration(summary?.minutes_today  || 0) },
+          { label: t('players.thisWeek'),  value: formatDuration(summary?.minutes_week   || 0) },
+          { label: t('players.thisMonth'), value: formatDuration(summary?.minutes_month  || 0) },
         ].map(({ label, value }) => (
           <div key={label} className="card p-4 text-center">
             <p className="text-xs text-gray-500">{label}</p>
@@ -151,7 +151,7 @@ export default function PlayerDetail() {
                       {format(new Date(d.date), 'dd/MM/yyyy')}
                     </td>
                     <td className="py-2 px-3 text-right font-medium text-gray-900 dark:text-white">
-                      {formatDuration(d.seconds_played)}
+                      {formatDuration(d.minutes_played)}
                     </td>
                   </tr>
                 ))}
