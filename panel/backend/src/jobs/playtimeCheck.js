@@ -3,30 +3,21 @@ const { checkPlayerLimits } = require('../services/playtimeService');
 const logger = require('../config/logger');
 
 async function runPlaytimeCheck(io) {
-  // Obtener todos los jugadores con sesión activa ahora mismo
-  const activeSessions = await query(`
-    SELECT DISTINCT ps.player_id
-    FROM panel_play_sessions ps
-    WHERE ps.logout_at IS NULL
-      AND ps.login_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+  // Verificar todos los jugadores que tienen límites configurados
+  const players = await query(`
+    SELECT DISTINCT p.id
+    FROM panel_players p
+    JOIN panel_playtime_limits l ON l.player_id = p.id
+    WHERE p.active = 1
   `);
 
-  for (const { player_id } of activeSessions) {
+  for (const { id } of players) {
     try {
-      await checkPlayerLimits(player_id, io);
+      await checkPlayerLimits(id, io);
     } catch (err) {
-      logger.error(`Error verificando jugador ${player_id}: ${err.message}`);
+      logger.error(`Error verificando jugador ${id}: ${err.message}`);
     }
   }
-
-  // Cerrar sesiones huérfanas (login hace más de 12h sin logout)
-  await query(`
-    UPDATE panel_play_sessions
-    SET logout_at = NOW(),
-        duration_s = TIMESTAMPDIFF(SECOND, login_at, NOW())
-    WHERE logout_at IS NULL
-      AND login_at < DATE_SUB(NOW(), INTERVAL 12 HOUR)
-  `);
 }
 
 module.exports = { runPlaytimeCheck };
