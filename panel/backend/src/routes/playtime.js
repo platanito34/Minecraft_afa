@@ -1,7 +1,7 @@
 const express = require('express');
 const { query, queryOne } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
-const { getTGEPlaytime } = require('../services/playtimeService');
+const { getTGEPlaytime, recordLogin, recordLogout } = require('../services/playtimeService');
 
 const router = express.Router();
 router.use(authenticate);
@@ -28,6 +28,29 @@ async function buildPlayerFilter(user) {
     params: [user.id],
   };
 }
+
+// ─── POST /api/playtime/login ─────────────────────────────────────────────────
+router.post('/login', async (req, res, next) => {
+  try {
+    const { uuid, username, server_id } = req.body;
+    if (!uuid || !username) {
+      return res.status(400).json({ error: 'uuid y username son obligatorios' });
+    }
+    const result = await recordLogin(uuid, username, server_id || null);
+    res.status(201).json({ player: result.player, sessionId: result.sessionId });
+  } catch (err) { next(err); }
+});
+
+// ─── POST /api/playtime/logout ────────────────────────────────────────────────
+router.post('/logout', async (req, res, next) => {
+  try {
+    const { uuid } = req.body;
+    if (!uuid) return res.status(400).json({ error: 'uuid es obligatorio' });
+    const result = await recordLogout(uuid);
+    if (!result) return res.status(404).json({ error: 'Jugador no encontrado' });
+    res.json({ player: result.player, session: result.session });
+  } catch (err) { next(err); }
+});
 
 // ─── GET /api/playtime/summary ────────────────────────────────────────────────
 // Devuelve por cada jugador:

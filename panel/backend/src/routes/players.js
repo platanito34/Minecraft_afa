@@ -28,9 +28,13 @@ async function getAccessiblePlayers(user) {
   `, [user.id]);
 }
 
-// GET /api/players
+// GET /api/players[?username=xxx]
 router.get('/', async (req, res, next) => {
   try {
+    const { username } = req.query;
+    const usernameFilter = username ? ` AND p.username LIKE ?` : '';
+    const usernameParam  = username ? [`%${username}%`] : [];
+
     let players;
     if (req.user.role === 'admin') {
       players = await query(`
@@ -38,8 +42,10 @@ router.get('/', async (req, res, next) => {
           (SELECT GROUP_CONCAT(c.name SEPARATOR ', ')
            FROM panel_class_players cp JOIN panel_classes c ON c.id = cp.class_id
            WHERE cp.player_id = p.id) AS classes
-        FROM panel_players p ORDER BY p.username
-      `);
+        FROM panel_players p
+        WHERE 1=1${usernameFilter}
+        ORDER BY p.username
+      `, usernameParam);
     } else if (req.user.role === 'teacher') {
       players = await query(`
         SELECT DISTINCT p.*,
@@ -49,17 +55,17 @@ router.get('/', async (req, res, next) => {
         FROM panel_players p
         JOIN panel_class_players cp ON cp.player_id = p.id
         JOIN panel_classes c ON c.id = cp.class_id
-        WHERE c.teacher_id = ?
+        WHERE c.teacher_id = ?${usernameFilter}
         ORDER BY p.username
-      `, [req.user.id]);
+      `, [req.user.id, ...usernameParam]);
     } else {
       players = await query(`
         SELECT p.*
         FROM panel_players p
         JOIN panel_parent_players pp ON pp.player_id = p.id
-        WHERE pp.parent_id = ?
+        WHERE pp.parent_id = ?${usernameFilter}
         ORDER BY p.username
-      `, [req.user.id]);
+      `, [req.user.id, ...usernameParam]);
     }
     const tgeResults = await Promise.all(players.map(p => getTGEPlaytime(p.uuid)));
     const withPlaytime = players.map((p, i) => ({
